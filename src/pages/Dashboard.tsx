@@ -5,18 +5,39 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Activity, Shield, AlertTriangle, CheckCircle, Clock, Target, Bot, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { threatIntelligenceService } from "@/services/threat-intelligence.service";
+import type { SecurityIncident } from "@/types/threat.types";
 
 export default function Dashboard() {
-  const recentIncidents = [
-    { id: 1, title: "AI-Detected DDoS Attack Vector", severity: "high", status: "auto-mitigating", time: "2 min ago", confidence: 98 },
-    { id: 2, title: "ML Anomaly: Unusual Login Pattern", severity: "medium", status: "resolved", time: "15 min ago", confidence: 87 },
-    { id: 3, title: "Neural Net Alert: Port Scan Activity", severity: "low", status: "monitoring", time: "1 hour ago", confidence: 76 },
-    { id: 4, title: "AI Signature: Advanced Malware Detected", severity: "high", status: "contained", time: "2 hours ago", confidence: 94 },
-  ];
+  const [recentIncidents, setRecentIncidents] = useState<SecurityIncident[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [timeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
 
+  // Fetch initial incidents
+  useEffect(() => {
+    const fetchIncidents = async () => {
+      setLoading(true);
+      try {
+        const incidents = await threatIntelligenceService.getIncidents();
+        setRecentIncidents(incidents);
+      } catch (error) {
+        console.error('Failed to fetch incidents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIncidents();
+
+    // Refresh incidents periodically
+    const refreshInterval = setInterval(fetchIncidents, 60000); // Every 60 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, []);
+
+  // Update clock
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -103,8 +124,13 @@ export default function Dashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="space-y-4">
-            {recentIncidents.map((incident) => {
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentIncidents.map((incident) => {
               const StatusIcon = getStatusIcon(incident.status);
               return (
                 <div key={incident.id} className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl hover:bg-slate-800/50 transition-all duration-200 group">
@@ -135,7 +161,8 @@ export default function Dashboard() {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "npm install",
+  "env": {
+    "OTX_API_KEY": "@otx_api_key",
+    "ABUSEIPDB_API_KEY": "@abuseipdb_api_key",
+    "IPGEO_API_KEY": "@ipgeo_api_key"
+  }
+}

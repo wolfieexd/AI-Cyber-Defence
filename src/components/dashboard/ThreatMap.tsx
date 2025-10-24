@@ -2,29 +2,48 @@ import { useEffect, useState } from "react";
 import { Globe, MapPin, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-interface ThreatLocation {
-  id: string;
-  country: string;
-  city: string;
-  threatType: string;
-  severity: "low" | "medium" | "high";
-  timestamp: string;
-  lat: number;
-  lng: number;
-}
+import { threatIntelligenceService } from "@/services/threat-intelligence.service";
+import type { ThreatLocation } from "@/types/threat.types";
 
 export function ThreatMap() {
-  const [threats, setThreats] = useState<ThreatLocation[]>([
-    { id: "1", country: "Russia", city: "Moscow", threatType: "DDoS Attack", severity: "high", timestamp: "2 min ago", lat: 55.7558, lng: 37.6176 },
-    { id: "2", country: "China", city: "Beijing", threatType: "Port Scan", severity: "medium", timestamp: "5 min ago", lat: 39.9042, lng: 116.4074 },
-    { id: "3", country: "North Korea", city: "Pyongyang", threatType: "Malware", severity: "high", timestamp: "8 min ago", lat: 39.0392, lng: 125.7625 },
-    { id: "4", country: "Iran", city: "Tehran", threatType: "Phishing", severity: "low", timestamp: "12 min ago", lat: 35.6762, lng: 51.4246 },
-    { id: "5", country: "Unknown", city: "Tor Network", threatType: "Data Breach", severity: "high", timestamp: "15 min ago", lat: 0, lng: 0 },
-  ]);
+  const [threats, setThreats] = useState<ThreatLocation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch initial threats
+  useEffect(() => {
+    const fetchThreats = async () => {
+      setLoading(true);
+      try {
+        const threatData = await threatIntelligenceService.getThreats();
+        setThreats(threatData);
+      } catch (error) {
+        console.error('Failed to fetch threats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThreats();
+
+    // Refresh threats periodically
+    const refreshInterval = setInterval(fetchThreats, 30000); // Every 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, []);
+
+  // Add random threats periodically for demo effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newThreat = threatIntelligenceService.generateRandomThreat();
+      setThreats(prev => [newThreat, ...prev.slice(0, 7)]);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
+      case "critical": return "destructive";
       case "high": return "destructive";
       case "medium": return "warning";
       default: return "secondary";
@@ -38,29 +57,12 @@ export function ThreatMap() {
       case "Phishing": return "🎣";
       case "Port Scan": return "🔍";
       case "Data Breach": return "💀";
+      case "Ransomware": return "🔒";
+      case "Botnet Activity": return "🤖";
+      case "APT Campaign": return "🎯";
       default: return "⚠️";
     }
   };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setThreats(prev => {
-        const newThreat: ThreatLocation = {
-          id: Date.now().toString(),
-          country: ["Russia", "China", "Iran", "North Korea", "Unknown"][Math.floor(Math.random() * 5)],
-          city: ["Moscow", "Beijing", "Tehran", "Pyongyang", "Tor Network"][Math.floor(Math.random() * 5)],
-          threatType: ["DDoS Attack", "Malware", "Phishing", "Port Scan", "Data Breach"][Math.floor(Math.random() * 5)],
-          severity: ["low", "medium", "high"][Math.floor(Math.random() * 3)] as "low" | "medium" | "high",
-          timestamp: "Just now",
-          lat: Math.random() * 180 - 90,
-          lng: Math.random() * 360 - 180,
-        };
-        return [newThreat, ...prev.slice(0, 7)];
-      });
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <Card className="col-span-3 border-slate-800/50 bg-card/50 backdrop-blur-sm">
@@ -75,7 +77,13 @@ export function ThreatMap() {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <div className="relative h-80 bg-gradient-to-br from-slate-900/50 to-slate-800/30 border border-slate-700/30 rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            <div className="relative h-80 bg-gradient-to-br from-slate-900/50 to-slate-800/30 border border-slate-700/30 rounded-xl overflow-hidden">
           {/* Professional world map visualization */}
           <div className="absolute inset-0">
             <div className="h-full w-full bg-gradient-to-r from-blue-600/5 via-blue-500/10 to-blue-600/5 opacity-60"></div>
@@ -132,6 +140,8 @@ export function ThreatMap() {
             </div>
           ))}
         </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
