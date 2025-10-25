@@ -2,6 +2,10 @@
 
 A production-ready, real-time cyber threat intelligence and incident management portal designed for defense and security operations centers (SOC). This application integrates with multiple free threat intelligence APIs to provide live threat data, geolocation mapping, and automated incident tracking.
 
+<p align="center">
+  <img src="https://github.com/wolfieexd/AI-powered-target-recognition-system/blob/main/Picture1.jpg?raw=true" alt="Picture1" />
+</p>
+
 ## 🚀 Features
 
 - **Real-Time Threat Intelligence**: Live threat data from AlienVault OTX and AbuseIPDB
