@@ -1,10 +1,11 @@
-import { Settings as SettingsIcon, Shield, Bell, Users, Database, Network, Lock, Key } from "lucide-react";
+import { Settings as SettingsIcon, Shield, Bell, Users, Database, Network, Lock, Key, Download, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
 
 export default function Settings() {
   const settingsCategories = [
@@ -53,10 +54,29 @@ export default function Settings() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800">
+            <Button
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+              onClick={() => {
+                toast({
+                  title: "Configuration Exported",
+                  description: "System configuration has been exported successfully.",
+                });
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
               Export Config
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                toast({
+                  title: "Settings Saved",
+                  description: "All configuration changes have been saved successfully.",
+                });
+              }}
+            >
+              <Save className="h-4 w-4 mr-2" />
               Save Changes
             </Button>
           </div>

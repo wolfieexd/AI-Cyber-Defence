@@ -1,10 +1,19 @@
 import { useState } from "react";
-import { Shield, AlertTriangle, Zap, Eye, X } from "lucide-react";
+import { Shield, AlertTriangle, Zap, Eye, X, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface Threat {
   id: string;
@@ -212,12 +221,80 @@ export default function Threats() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Details
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Details
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <span className="text-2xl">{getThreatIcon(threat.type)}</span>
+                          {threat.type} - {threat.id}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Detailed threat analysis and mitigation information
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">SEVERITY</h4>
+                            <Badge variant={getSeverityColor(threat.severity)} className="text-sm">
+                              {threat.severity.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">STATUS</h4>
+                            <Badge variant={getStatusColor(threat.status)} className="text-sm">
+                              {threat.status.toUpperCase()}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">DESCRIPTION</h4>
+                          <p className="text-sm">{threat.description}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">SOURCE</h4>
+                            <p className="text-sm font-mono bg-muted p-2 rounded">{threat.source}</p>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">TARGET</h4>
+                            <p className="text-sm font-mono bg-muted p-2 rounded">{threat.target}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-1">DETECTED AT</h4>
+                          <p className="text-sm">{threat.timestamp}</p>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                          <Button variant="outline" className="flex-1">
+                            <Zap className="h-4 w-4 mr-2" />
+                            Analyze
+                          </Button>
+                          <Button variant="outline" className="flex-1">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Mark Resolved
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   {threat.status === "active" && (
-                    <Button variant="destructive" size="sm">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "Threat Blocked",
+                          description: `Successfully blocked threat ${threat.id} from ${threat.source}`,
+                        });
+                      }}
+                    >
                       <X className="h-4 w-4 mr-2" />
                       Block
                     </Button>

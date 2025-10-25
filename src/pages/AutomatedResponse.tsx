@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bot, Play, Pause, Settings, Activity, CheckCircle, AlertTriangle, Clock, Zap, Target } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 export default function AutomatedResponse() {
   const automatedResponses = [
@@ -175,7 +176,17 @@ export default function AutomatedResponse() {
                     <Badge variant={getStatusColor(response.status)} className="font-medium">
                       {response.status.toUpperCase()}
                     </Badge>
-                    <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-slate-400 hover:text-white"
+                      onClick={() => {
+                        toast({
+                          title: "Response Protocol Configured",
+                          description: `Settings for ${response.name} have been updated.`,
+                        });
+                      }}
+                    >
                       <Settings className="h-4 w-4" />
                     </Button>
                   </div>

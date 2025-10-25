@@ -1,7 +1,23 @@
-import { AlertTriangle, Clock, CheckCircle, XCircle, User, Calendar } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, XCircle, User, Calendar, Eye, Settings, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 interface Incident {
   id: string;
@@ -247,14 +263,141 @@ export default function Incidents() {
                 </div>
 
                 <div className="flex items-center justify-end gap-2">
-                  <Button variant="outline" size="sm">
-                    View Details
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Update Status
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-destructive" />
+                          {incident.title}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Incident ID: {incident.id} • Reported by {incident.reporter}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">SEVERITY</h4>
+                            <Badge variant={getSeverityColor(incident.severity)}>
+                              {incident.severity.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">STATUS</h4>
+                            <Badge variant={getStatusColor(incident.status)}>
+                              {incident.status.toUpperCase()}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">DESCRIPTION</h4>
+                          <p className="text-sm">{incident.description}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">ASSIGNEE</h4>
+                            <p className="text-sm">{incident.assignee}</p>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">REPORTER</h4>
+                            <p className="text-sm">{incident.reporter}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">CREATED</h4>
+                            <p className="text-sm">{formatDate(incident.createdAt)}</p>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-muted-foreground mb-1">LAST UPDATED</h4>
+                            <p className="text-sm">{formatDate(incident.updatedAt)}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">AFFECTED SYSTEMS</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {incident.affectedSystems.map((system, index) => (
+                              <Badge key={index} variant="outline">
+                                {system}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                          <Button variant="outline" className="flex-1">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Edit Incident
+                          </Button>
+                          <Button variant="outline" className="flex-1">
+                            <Zap className="h-4 w-4 mr-2" />
+                            Generate Report
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Update Status
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Update Incident Status</DialogTitle>
+                        <DialogDescription>
+                          Change the status of incident {incident.id}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">New Status</label>
+                          <Select defaultValue={incident.status}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open">Open</SelectItem>
+                              <SelectItem value="investigating">Investigating</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            className="flex-1"
+                            onClick={() => {
+                              toast({
+                                title: "Status Updated",
+                                description: `Incident ${incident.id} status has been updated successfully.`,
+                              });
+                            }}
+                          >
+                            Update Status
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   {incident.status !== "closed" && (
-                    <Button size="sm">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "Action Taken",
+                          description: `Automated response initiated for incident ${incident.id}`,
+                        });
+                      }}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
                       Take Action
                     </Button>
                   )}

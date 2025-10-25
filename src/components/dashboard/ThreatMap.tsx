@@ -4,6 +4,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { threatIntelligenceService } from "@/services/threat-intelligence.service";
 import type { ThreatLocation } from "@/types/threat.types";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Add custom CSS for Leaflet map
+const mapStyles = `
+  .leaflet-container {
+    background: #0f172a !important;
+  }
+  .leaflet-popup-content-wrapper {
+    background: #1e293b !important;
+    color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  }
+  .leaflet-popup-tip {
+    background: #1e293b !important;
+  }
+  .leaflet-popup-content {
+    margin: 0 !important;
+  }
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = mapStyles;
+  document.head.appendChild(styleSheet);
+}
 
 export function ThreatMap() {
   const [threats, setThreats] = useState<ThreatLocation[]>([]);
@@ -64,6 +101,41 @@ export function ThreatMap() {
     }
   };
 
+  // Create custom marker icons for different threat severities
+  const createCustomIcon = (severity: string) => {
+    const color = severity === "high" || severity === "critical" ? "#ef4444" :
+                  severity === "medium" ? "#f59e0b" : "#10b981";
+
+    return L.divIcon({
+      html: `<div style="
+        width: 16px;
+        height: 16px;
+        background-color: ${color};
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 8px ${color}80;
+        animation: pulse 2s infinite;
+      "></div>`,
+      className: 'custom-threat-marker',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+  };
+
+  // Component to fit map bounds to show all threats
+  const FitBounds = ({ threats }: { threats: ThreatLocation[] }) => {
+    const map = useMap();
+
+    useEffect(() => {
+      if (threats.length > 0) {
+        const bounds = L.latLngBounds(threats.map(threat => [threat.lat, threat.lng]));
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
+    }, [threats, map]);
+
+    return null;
+  };
+
   return (
     <Card className="col-span-3 border-slate-800/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="border-b border-slate-800/50">
@@ -83,43 +155,51 @@ export function ThreatMap() {
           </div>
         ) : (
           <>
-            <div className="relative h-80 bg-gradient-to-br from-slate-900/50 to-slate-800/30 border border-slate-700/30 rounded-xl overflow-hidden">
-          {/* Professional world map visualization */}
-          <div className="absolute inset-0">
-            <div className="h-full w-full bg-gradient-to-r from-blue-600/5 via-blue-500/10 to-blue-600/5 opacity-60"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_70%)]"></div>
-          </div>
-          
-          {/* Enhanced threat indicators */}
-          <div className="absolute inset-0 p-4">
-            {threats.map((threat, index) => (
-              <div
-                key={threat.id}
-                className={`absolute animate-fade-in cursor-pointer`}
-                style={{
-                  left: `${Math.max(10, Math.min(90, (threat.lng + 180) / 360 * 100))}%`,
-                  top: `${Math.max(10, Math.min(90, (90 - threat.lat) / 180 * 100))}%`,
-                  animationDelay: `${index * 0.1}s`
-                }}
+            <div className="relative h-80 border border-slate-700/30 rounded-xl overflow-hidden">
+              <MapContainer
+                center={[20, 0]}
+                zoom={2}
+                style={{ height: '100%', width: '100%' }}
+                className="rounded-xl"
               >
-                <div className="relative group">
-                  <div className={`h-4 w-4 rounded-full animate-pulse-subtle border-2 border-white/30 shadow-lg ${
-                    threat.severity === "high" ? "bg-threat-critical shadow-threat-critical/50" :
-                    threat.severity === "medium" ? "bg-threat-medium shadow-threat-medium/50" : 
-                    "bg-threat-low shadow-threat-low/50"
-                  }`}></div>
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                    <div className="bg-slate-900/95 border border-slate-700 rounded-lg p-3 text-xs whitespace-nowrap shadow-xl backdrop-blur-sm">
-                      <div className="font-semibold text-white">{threat.country}</div>
-                      <div className="text-slate-300">{threat.threatType}</div>
-                      <div className="text-slate-400">{threat.timestamp}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <FitBounds threats={threats} />
+                {threats.map((threat) => (
+                  <Marker
+                    key={threat.id}
+                    position={[threat.lat, threat.lng]}
+                    icon={createCustomIcon(threat.severity)}
+                  >
+                    <Popup className="custom-popup">
+                      <div className="p-2 min-w-48">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">{getThreatIcon(threat.threatType)}</span>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{threat.threatType}</h3>
+                            <p className="text-sm text-gray-600">{threat.country}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Severity:</span>
+                            <Badge variant={getSeverityColor(threat.severity)} className="text-xs">
+                              {threat.severity.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Time:</span>
+                            <span className="text-gray-700">{threat.timestamp}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
 
         {/* Enhanced recent threats list */}
         <div className="mt-6 space-y-3 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
